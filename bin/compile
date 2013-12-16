@@ -221,6 +221,21 @@ puts-step "Installing dependencies using Pip ($PIP_VERSION)"
 [ ! "$FRESH_PYTHON" ] && bpwatch stop pip_install
 [ "$FRESH_PYTHON" ] && bpwatch stop pip_install_first
 
+node_version="0.10.22"
+puts-step "Downloading and installing node"
+node_url="http://s3pository.heroku.com/node/v$node_version/node-v$node_version-linux-x64.tar.gz"
+curl $node_url -s -o - | tar xzf - -C $BUILD_DIR
+
+# Move node (and npm) into ./.heroku/vendor and make them executable
+mkdir -p $BUILD_DIR/.heroku/vendor
+rm -rf $BUILD_DIR/.heroku/vendor/node
+mv $BUILD_DIR/node-v$node_version-linux-x64 $BUILD_DIR/.heroku/vendor/node
+chmod +x $BUILD_DIR/.heroku/vendor/node/bin/*
+PATH=$PATH:$BUILD_DIR/.heroku/vendor/node/bin
+
+# Install bower
+npm install -g bower coffee-script recess
+
 # Django collectstatic support.
 bpwatch start collectstatic
   sub-env $BIN_DIR/steps/collectstatic
@@ -230,7 +245,7 @@ bpwatch stop collectstatic
 #
 
 # Set context environment variables.
-set-env PATH '$HOME/.heroku/python/bin:$PATH'
+set-env PATH '$HOME/.heroku/python/bin:$HOME/.heroku/vendor/node/bin:$PATH'
 set-env PYTHONUNBUFFERED true
 set-env PYTHONHOME /app/.heroku/python
 set-default-env LIBRARY_PATH /app/.heroku/vendor/lib
